@@ -231,10 +231,16 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
   CURRENT_MONITOR=$(i3-msg -t get_workspaces | jq '.[] | select(.focused==true).output' | cut -d"\"" -f2)
 
   # get the i3-tree for all workspaces for the current monitor
-  i3-save-tree --output "$CURRENT_MONITOR" > "$ALL_WS_FILE" 2>&1
+  node - > "$ALL_WS_FILE" 2>&1 <<HERE
+const capture=[$(i3-save-tree --output "$CURRENT_MONITOR" | sed -e 's/^}/},/g')];
+console.log(JSON.stringify(capture[1], null, 4));
+HERE
 
   # get the i3-tree for the current workspace
-  i3-save-tree --workspace "$WORKSPACE_ID" > "$LAYOUT_FILE" 2>&1
+  node - > "$LAYOUT_FILE" 2>&1 <<HERE
+const capture=[$(i3-save-tree --workspace "$WORKSPACE_ID" | sed -E -e 's/^}/},/g' -e 's@//(.*"(class|instance|title|window_role))@\1@g')];
+console.log(JSON.stringify(capture, null, 4));
+HERE
 
   # for debug
   # cp $LAYOUT_FILE $LAYOUT_PATH/ws_temp.txt
@@ -277,21 +283,6 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
     # when scripting d% to delete to the next in pair, it actually leaves one of the pair characters there
     $VIM_BIN $HEADLESS -nEs -c '%g/floating_con/norm [{d%dd' -c "wqa" -- "$LAYOUT_FILE"
   fi
-
-  # remove comments
-  $VIM_BIN $HEADLESS -nEs -c '%g/\/\//norm dd' -c "wqa" -- "$LAYOUT_FILE"
-  $VIM_BIN $HEADLESS -nEs -c '%g/\/\//norm dd' -c "wqa" -- "$ALL_WS_FILE"
-
-  # remove indents
-  $VIM_BIN $HEADLESS -nEs -c '%g/^/norm 0d^' -c "wqa" -- "$LAYOUT_FILE"
-  $VIM_BIN $HEADLESS -nEs -c '%g/^/norm 0d^' -c "wqa" -- "$ALL_WS_FILE"
-
-  # remove commas
-  $VIM_BIN $HEADLESS -nEs -c '%s/^},$/}/g' -c "wqa" -- "$LAYOUT_FILE"
-  $VIM_BIN $HEADLESS -nEs -c '%s/^},$/}/g' -c "wqa" -- "$ALL_WS_FILE"
-
-  # remove empty lines in the the workspace file
-  $VIM_BIN $HEADLESS -nEs -c '%g/^$/norm dd' -c "wqa" -- "$LAYOUT_FILE"
 
   # now I will try to find the part in the big file which containts the
   # small file. I have not found a suitable solution using off-the-shelf
