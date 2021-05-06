@@ -233,7 +233,7 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
   # get the i3-tree for all workspaces for the current monitor
   node - > "$ALL_WS_FILE" 2>&1 <<HERE
 const capture=[$(i3-save-tree --output "$CURRENT_MONITOR" | sed -e 's/^}/},/g')];
-console.log(JSON.stringify(capture[1], null, 4));
+console.log(JSON.stringify(capture[$WORKSPACE_ID - 1], null, 4));
 HERE
 
   # get the i3-tree for the current workspace
